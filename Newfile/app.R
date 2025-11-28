@@ -521,7 +521,6 @@ server <- function(input, output, session) {
   })
 }
 
-
 # Run the first application
 
 shinyApp(ui, server)
