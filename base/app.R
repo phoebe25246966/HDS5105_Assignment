@@ -96,23 +96,59 @@ ui <- dashboardPage(
           valueBoxOutput("sum_age"),
           valueBoxOutput("sum_deathday")
         ),
+        fluidRow(
+          box(
+            title = "Filter Categorical Variable",
+            status="primary",
+            solidHeader = TRUE,
+            collapsible = TRUE,
+            selectInput(
+              inputId = "filter_cat",
+              label   = "Select filter",
+              choices = c("Sex","Hypertension"),
+              multiple = FALSE
+            )
+          ),
+          box(
+            title="Analysis",
+            status="primary",
+            solidHeader = TRUE,
+            collapsible = TRUE,
+            plotlyOutput("distPlot_cat")
+          )
+        ),
+        fluidRow(
         box(
-          title = "Filters",
+          title = "Filter Continuous Variable",
+          status="primary",
+          solidHeader = TRUE,
+          collapsible = TRUE,
           selectInput(
             inputId = "filter",
-            label   = "Select filter",
-            choices = c("Age","Sex","Hypertension","DiaBP","SysBP","KLevel","Creat"),
+            label   = "Select filter(continuous variable)",
+            choices = c("Age","DiaBP","SysBP","KLevel","Creat"),
             multiple = FALSE
+            ),
+          selectInput(
+            inputId = "type",
+            label   = "Select graph type",
+            choices = c("BarPlot","LinePlot"),
+            multiple = FALSE
+          )
           ),
-        ),
-        
-        fluidRow(
-          box(plotOutput("distPlot",  height = 200))
+        box(
+          title="Analysis",
+          status="primary",
+          solidHeader = TRUE,
+          collapsible = TRUE,
+          plotlyOutput("distPlot")
         )
-      ),
+      )
+
+        ),
       #2nd tab
       tabItem(tabName = "Hospitalization",
-              h2("Hospitalization among different category"),
+              h2("Hospitalization among different categories"),
               fluidRow(
                 box(
                   column(4,selectInput(inputId = "category",label="Select category",choice=c("WHF","Treatment"),multiple = FALSE) ),
@@ -126,7 +162,7 @@ ui <- dashboardPage(
                   status="warning",
                   solidHeader = TRUE,
                   collapsible = TRUE,
-                  column(width=4,plotOutput("tab2_distPlot",height=200)),
+                  column(width=6,plotlyOutput("tab2_distPlot",height=200)),
                   reactableOutput("tab2_table1")
                 )
               ),
@@ -137,14 +173,14 @@ ui <- dashboardPage(
                   status="warning",
                   solidHeader = TRUE,
                   collapsible = TRUE,
-                  column(width=4,plotOutput("tab2_distPlot2",height=200)),
+                  column(width=6,plotlyOutput("tab2_distPlot2",height=200)),
                   reactableOutput("tab2_table2")
                 )
               )  
       ),
       #3rd tab
       tabItem(tabName = "Mortality",
-              h2("Mortality among different category"),
+              h2("Mortality among different categories"),
               fluidRow(
                 box(
                   column(4,selectInput(inputId = "category2",label="Select category",choice=c("CVD","Treatment"),multiple = FALSE)),
@@ -158,7 +194,7 @@ ui <- dashboardPage(
                   status="warning",
                   solidHeader = TRUE,
                   collapsible = TRUE,
-                  column(width=4,plotOutput("tab3_distPlot",height=200)),
+                  column(width=6,plotlyOutput("tab3_distPlot",height=200)),
                   reactableOutput("tab3_table1")
                 )
               ),
@@ -169,7 +205,7 @@ ui <- dashboardPage(
                   status="warning",
                   solidHeader = TRUE,
                   collapsible = TRUE,
-                  column(width=4,plotOutput("tab3_distPlot2",height=200)),
+                  column(width=6,plotlyOutput("tab3_distPlot2",height=200)),
                   reactableOutput("tab3_table2"),
                 )
               )
@@ -242,6 +278,22 @@ server <- function(input, output) {
       )
   })
   
+  DIG_sub_cat <- reactive({
+    filter <- req(input$filter_cat)
+    colname <- switch(
+      filter,
+      "Sex" = "SEX",
+      "Hypertension" = "HYPERTEN"
+    )
+    DIG_df%>%
+      mutate(category_var = .data[[colname]]) %>%
+      group_by(TRTMT,category_var)%>%
+      summarise(
+        total=n(),
+        .groups = "drop")
+    
+  })
+  
   DIG_sub <- reactive({
     filter <- req(input$filter)
     colname <- switch(
@@ -259,7 +311,8 @@ server <- function(input, output) {
       mutate(category_var = .data[[colname]]) %>%
       group_by(TRTMT,category_var)%>%
       summarise(
-        total=n(),.groups = "drop")
+        total=n(),
+        .groups = "drop")
     
   })
   
@@ -386,32 +439,49 @@ server <- function(input, output) {
   
   #Baseline
   
-  output$distPlot <- renderPlot({
-    ggplot(DIG_sub(), aes(x = category_var, y=total,fill = TRTMT)) +
-      geom_col(position = "dodge")
+  output$distPlot <- renderPlotly({
+    filter <- req(input$filter)
+    if(input$type=="BarPlot"){
+    plot <- ggplot(DIG_sub(), aes(x = category_var, y=total,fill = TRTMT)) +
+      geom_col(position = "dodge")+labs(x=paste(filter),title = paste("Plot between ",filter," and treatment"))+theme_minimal()
+    ggplotly(plot)
+    }
+    else if(input$type=="LinePlot"){
+      plot <- ggplot(DIG_sub(), aes(x = category_var, y=total,color = TRTMT)) +
+        geom_line()+labs(x=paste(filter),title = paste("Plot between ",filter," and treatment"))+theme_minimal()
+      ggplotly(plot)
+    }
   })
   
+  output$distPlot_cat <- renderPlotly({
+    filter_cat <- req(input$filter_cat)
+      plot <- ggplot(DIG_sub_cat(), aes(x = factor(category_var), y=total,fill = TRTMT)) +
+        geom_col(position = "dodge")+labs(x=paste(filter_cat),title = paste("Plot between ",filter_cat," and treatment"))+theme_minimal()
+      ggplotly(plot)
+  })
   
   #Hospitalization output
   
-  output$tab2_distPlot <- renderPlot({
+  output$tab2_distPlot <- renderPlotly({
     category1 <- req(input$category)
-    ggplot(DIG_sub2(),
+    plot<-ggplot(DIG_sub2(),
            aes(x = factor(category_var), y = hospitalization, fill = factor(category_var))) +
       geom_col()+labs(x = paste(category1),y="Hospitalization",fill=paste(category1),title = paste("Plot between ",category1," and hospitalization"))
-  })
+    ggplotly(plot)
+    })
   output$tab2_table1 <- renderReactable({
     reactable(DIG_sub2())
   })
   
   
-  output$tab2_distPlot2 <- renderPlot({
+  output$tab2_distPlot2 <- renderPlotly({
     #req value from input
     req(input$multicategory!="Disable")
-    ggplot(DIG_sub3(), aes(x=factor(WHF), y = hospitalization,fill=factor(TRTMT))) +
+    plot <- ggplot(DIG_sub3(), aes(x=factor(WHF), y = hospitalization,fill=factor(TRTMT))) +
       geom_col(position = "dodge") +
       labs(x="WHF",y="Hospitalization",fill="Treatment",title = "Plot between WHF, HOSP and Treatment")
-  })
+    ggplotly(plot)
+    })
   output$tab2_table2 <- renderReactable({
     req(input$multicategory!="Disable")
     reactable(DIG_sub3())
@@ -419,24 +489,26 @@ server <- function(input, output) {
   
   #Mortality output
   
-  output$tab3_distPlot <- renderPlot({
+  output$tab3_distPlot <- renderPlotly({
     category2 <- req(input$category2)
-    ggplot(DIG_sub4(),
+    plot <- ggplot(DIG_sub4(),
            aes(x = factor(category_var2), y = death, fill = factor(category_var2))) +
       geom_col()+labs(x = paste(category2),y="Death",fill=paste(category2),title = paste("Plot between ",category2," and death"))
-  })
+    ggplotly(plot)
+    })
   output$tab3_table1 <- renderReactable({
     reactable(DIG_sub4())
   })
   
   
-  output$tab3_distPlot2 <- renderPlot({
+  output$tab3_distPlot2 <- renderPlotly({
     #req value from input
     req(input$multicategory2!="Disable")
-    ggplot(DIG_sub5(), aes(x=factor(CVD), y = death,fill=factor(TRTMT))) +
+    plot <- ggplot(DIG_sub5(), aes(x=factor(CVD), y = death,fill=factor(TRTMT))) +
       geom_col(position = "dodge") +
       labs(x="CVD",y="Death",fill="Treatment",title = "Plot between CVD, Death and Treatment")
-  })
+    ggplotly(plot)
+    })
   output$tab3_table2 <- renderReactable({
     req(input$multicategory2!="Disable")
     reactable(DIG_sub5())
