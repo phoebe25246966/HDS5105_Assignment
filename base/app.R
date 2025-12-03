@@ -148,10 +148,23 @@ ui <- dashboardPage(
         ),
       #2nd tab
       tabItem(tabName = "Hospitalization",
-              h2("Hospitalization among different categories"),
+              h2("Relationship of hospitalization with different types of medical history in each treatment group"),
               fluidRow(
                 box(
-                  column(4,selectInput(inputId = "category",label="Select category",choice=c("WHF","Treatment"),multiple = FALSE) ),
+                  title = "Select Main Focus",
+                  status = "primary",
+                  solidHeader = TRUE, 
+                  column(4,checkboxGroupInput(inputId = "category_main", label=NULL,choices=c("Worsening heart failure","Pulmonary congestion","Diabetes","Hypertension")),
+                  inlube=FALSE)
+                )
+              ),
+              #Only show when checkbox is selected
+              conditionalPanel(
+                condition = "input.category_main.includes('Worsening heart failure')",
+              #WHF
+              fluidRow(
+                box(
+                  column(4,selectInput(inputId = "category",label="Select category",choice=c("WHF"),multiple = FALSE) ),
                   column(4,radioButtons(inputId = "multicategory",label="Show multiple category",choices=c("Disable","Enable")))
                 )
               ),
@@ -176,14 +189,125 @@ ui <- dashboardPage(
                   column(width=6,plotlyOutput("tab2_distPlot2",height=200)),
                   reactableOutput("tab2_table2")
                 )
-              )  
+              )
+            ),
+            #Only show when checkbox is selected
+            conditionalPanel(
+              condition = "input.category_main.includes('Pulmonary congestion')",
+              #PULCONG
+              fluidRow(
+                box(
+                  column(4,selectInput(inputId = "category_tab2_2",label="Select category",choice=c("Pulmonary congestion"),multiple = FALSE) ),
+                  column(4,radioButtons(inputId = "multicategory_tab2_2",label="Show multiple category",choices=c("Disable","Enable")))
+                )
+              ),
+              fluidRow(
+                box(
+                  width=10,
+                  title="Single Categories Analysis",
+                  status="warning",
+                  solidHeader = TRUE,
+                  collapsible = TRUE,
+                  column(width=6,plotlyOutput("tab2_distPlot3",height=200)),
+                  reactableOutput("tab2_table3")
+                )
+              ),
+              fluidRow(
+                box(
+                  width=10,
+                  title="Multiple Categories Analysis",
+                  status="warning",
+                  solidHeader = TRUE,
+                  collapsible = TRUE,
+                  column(width=6,plotlyOutput("tab2_distPlot4",height=200)),
+                  reactableOutput("tab2_table4")
+                )
+              )
+            ),
+            #Only show when checkbox is selected
+            conditionalPanel(
+              condition = "input.category_main.includes('Diabetes')",
+              #DIABETES
+              fluidRow(
+                box(
+                  column(4,selectInput(inputId = "category_tab2_3",label="Select category",choice=c("Diabetes"),multiple = FALSE) ),
+                  column(4,radioButtons(inputId = "multicategory_tab2_3",label="Show multiple category",choices=c("Disable","Enable")))
+                )
+              ),
+              fluidRow(
+                box(
+                  width=10,
+                  title="Single Categories Analysis",
+                  status="warning",
+                  solidHeader = TRUE,
+                  collapsible = TRUE,
+                  column(width=6,plotlyOutput("tab2_distPlot5",height=200)),
+                  reactableOutput("tab2_table5")
+                )
+              ),
+              fluidRow(
+                box(
+                  width=10,
+                  title="Multiple Categories Analysis",
+                  status="warning",
+                  solidHeader = TRUE,
+                  collapsible = TRUE,
+                  column(width=6,plotlyOutput("tab2_distPlot6",height=200)),
+                  reactableOutput("tab2_table6")
+                )
+              )
+            ),
+            #Only show when checkbox is selected
+            conditionalPanel(
+              condition = "input.category_main.includes('Hypertension')",
+              #HYPERTEN
+              fluidRow(
+                box(
+                  column(4,selectInput(inputId = "category_tab2_4",label="Select category",choice=c("Hypertension"),multiple = FALSE) ),
+                  column(4,radioButtons(inputId = "multicategory_tab2_4",label="Show multiple category",choices=c("Disable","Enable")))
+                )
+              ),
+              fluidRow(
+                box(
+                  width=10,
+                  title="Single Categories Analysis",
+                  status="warning",
+                  solidHeader = TRUE,
+                  collapsible = TRUE,
+                  column(width=6,plotlyOutput("tab2_distPlot7",height=200)),
+                  reactableOutput("tab2_table7")
+                )
+              ),
+              fluidRow(
+                box(
+                  width=10,
+                  title="Multiple Categories Analysis",
+                  status="warning",
+                  solidHeader = TRUE,
+                  collapsible = TRUE,
+                  column(width=6,plotlyOutput("tab2_distPlot8",height=200)),
+                  reactableOutput("tab2_table8")
+                )
+              )
+            )
       ),
       #3rd tab
       tabItem(tabName = "Mortality",
-              h2("Mortality among different categories"),
+              h2("Relationship of mortality with different types of medical history in each treatment group"),
               fluidRow(
                 box(
-                  column(4,selectInput(inputId = "category2",label="Select category",choice=c("CVD","Treatment"),multiple = FALSE)),
+                  title = "Select Main Focus",
+                  status = "primary",
+                  solidHeader = TRUE, 
+                  column(4,checkboxGroupInput(inputId = "category_main_m", label=NULL,choices=c("Worsening heart failure","CVD","Diabetes","Hypertension")),
+                         inlube=FALSE)
+                )
+              ),
+              conditionalPanel(
+                condition = "input.category_main_m.includes('CVD')",
+              fluidRow(
+                box(
+                  column(4,selectInput(inputId = "category2",label="Select category",choice=c("CVD"),multiple = FALSE)),
                   column(4,radioButtons(inputId = "multicategory2",label="Show multiple category",choices=c("Disable","Enable"))),
                 )
               ),
@@ -209,6 +333,107 @@ ui <- dashboardPage(
                   reactableOutput("tab3_table2"),
                 )
               )
+        ),
+        #Only show when checkbox is selected
+        conditionalPanel(
+          condition = "input.category_main_m.includes('Worsening heart failure')",
+          #WHF
+          fluidRow(
+            box(
+              column(4,selectInput(inputId = "category2_tab3_2",label="Select category",choice=c("Worsening Heart Failure"),multiple = FALSE) ),
+              column(4,radioButtons(inputId = "multicategory2_tab3_2",label="Show multiple category",choices=c("Disable","Enable")))
+            )
+          ),
+          fluidRow(
+            box(
+              width=10,
+              title="Single Categories Analysis",
+              status="warning",
+              solidHeader = TRUE,
+              collapsible = TRUE,
+              column(width=6,plotlyOutput("tab3_distPlot3",height=200)),
+              reactableOutput("tab3_table3")
+            )
+          ),
+          fluidRow(
+            box(
+              width=10,
+              title="Multiple Categories Analysis",
+              status="warning",
+              solidHeader = TRUE,
+              collapsible = TRUE,
+              column(width=6,plotlyOutput("tab3_distPlot4",height=200)),
+              reactableOutput("tab3_table4")
+            )
+          )
+        ),
+        #Only show when checkbox is selected
+        conditionalPanel(
+          condition = "input.category_main_m.includes('Diabetes')",
+          #WHF
+          fluidRow(
+            box(
+              column(4,selectInput(inputId = "category2_tab3_3",label="Select category",choice=c("Diabetes"),multiple = FALSE) ),
+              column(4,radioButtons(inputId = "multicategory2_tab3_3",label="Show multiple category",choices=c("Disable","Enable")))
+            )
+          ),
+          fluidRow(
+            box(
+              width=10,
+              title="Single Categories Analysis",
+              status="warning",
+              solidHeader = TRUE,
+              collapsible = TRUE,
+              column(width=6,plotlyOutput("tab3_distPlot5",height=200)),
+              reactableOutput("tab3_table5")
+            )
+          ),
+          fluidRow(
+            box(
+              width=10,
+              title="Multiple Categories Analysis",
+              status="warning",
+              solidHeader = TRUE,
+              collapsible = TRUE,
+              column(width=6,plotlyOutput("tab3_distPlot6",height=200)),
+              reactableOutput("tab3_table6")
+            )
+          )
+        ),
+        #Only show when checkbox is selected
+        conditionalPanel(
+          condition = "input.category_main_m.includes('Hypertension')",
+          #HYPERTEN
+          fluidRow(
+            box(
+              column(4,selectInput(inputId = "category2_tab3_4",label="Select category",choice=c("Hypertension"),multiple = FALSE) ),
+              column(4,radioButtons(inputId = "multicategory2_tab3_4",label="Show multiple category",choices=c("Disable","Enable")))
+            )
+          ),
+          fluidRow(
+            box(
+              width=10,
+              title="Single Categories Analysis",
+              status="warning",
+              solidHeader = TRUE,
+              collapsible = TRUE,
+              column(width=6,plotlyOutput("tab3_distPlot7",height=200)),
+              reactableOutput("tab3_table7")
+            )
+          ),
+          fluidRow(
+            box(
+              width=10,
+              title="Multiple Categories Analysis",
+              status="warning",
+              solidHeader = TRUE,
+              collapsible = TRUE,
+              column(width=6,plotlyOutput("tab3_distPlot8",height=200)),
+              reactableOutput("tab3_table8")
+            )
+          )
+        )
+        
       ),
       
       #4th tab
@@ -261,7 +486,7 @@ server <- function(input, output) {
   
   #Phoebe
   
-  #Reactive
+  #Baseline characteristics (reactive)
   DIG <- reactive({
     DIG_df
   })
@@ -316,12 +541,12 @@ server <- function(input, output) {
     
   })
   
+  #Hospitalization (reactive)
   
   DIG_sub2 <- reactive({
     category_col <- switch(
       input$category,
-      "WHF" = "WHF",
-      "Treatment" = "TRTMT"
+      "WHF" = "WHF"
     )
     
     DIG_df %>%
@@ -334,20 +559,94 @@ server <- function(input, output) {
       )
   })
   
-  DIG_sub3 <- reactive({
+  DIG_sub2_pulcong <- reactive({
+    category_col <- switch(
+      input$category_tab2_2,
+      "Pulmonary congestion" = "PULCONG"
+    )
+    
     DIG_df %>%
-      group_by(WHF,TRTMT) %>% 
+      #save the categorical variable
+      mutate(category_var = .data[[category_col]]) %>%
+      group_by(category_var) %>% 
       summarise(
         hospitalization = sum(HOSP),
         total = n()
       )
   })
   
+  DIG_sub2_pulcong_2 <- reactive({
+    DIG_df %>%
+      group_by(PULCONG,TRTMT) %>% 
+      summarise(
+        hospitalization = sum(HOSP),
+        total = n()
+      )
+  })
+  
+  DIG_sub2_dia <- reactive({
+    category_col <- switch(
+      input$category_tab2_3,
+      "Diabetes" = "DIABETES"
+    )
+    
+    DIG_df %>%
+      #save the categorical variable
+      mutate(category_var = .data[[category_col]]) %>%
+      group_by(category_var) %>% 
+      summarise(
+        hospitalization = sum(HOSP),
+        total = n()
+      )
+  })
+  
+  DIG_sub2_dia_2 <- reactive({
+    DIG_df %>%
+      group_by(DIABETES,TRTMT) %>% 
+      summarise(
+        hospitalization = sum(HOSP)
+      )
+  })
+  
+  DIG_sub2_hyp <- reactive({
+    category_col <- switch(
+      input$category_tab2_4,
+      "Hypertension" = "HYPERTEN",
+      "Treatment" = "TRTMT"
+    )
+    
+    DIG_df %>%
+      #save the categorical variable
+      mutate(category_var = .data[[category_col]]) %>%
+      group_by(category_var) %>% 
+      summarise(
+        hospitalization = sum(HOSP)
+      )
+  })
+  
+  DIG_sub2_hyp_2 <- reactive({
+    DIG_df %>%
+      group_by(HYPERTEN,TRTMT) %>% 
+      summarise(
+        hospitalization = sum(HOSP)
+      )
+  })
+  
+  
+  DIG_sub3 <- reactive({
+    DIG_df %>%
+      group_by(WHF,TRTMT) %>% 
+      summarise(
+        hospitalization = sum(HOSP)
+      )
+  })
+  
+  #Mortality (reactive)
+  
   DIG_sub4 <- reactive({
     category_col2 <- switch(
       input$category2,
-      "CVD" = "CVD",
-      "Treatment" = "TRTMT"
+      "CVD" = "CVD"
     )
     
     DIG_df %>%
@@ -356,8 +655,7 @@ server <- function(input, output) {
         category_var2 = .data[[category_col2]]) %>%
       group_by(category_var2) %>% 
       summarise(
-        death = sum(DEATH == "Death"),
-        total = n()
+        death = sum(DEATH == "Death")
       )
   })
   
@@ -365,10 +663,82 @@ server <- function(input, output) {
     DIG_df %>%
       group_by(CVD,TRTMT) %>% 
       summarise(
-        death = sum(DEATH == "Death"),
-        total = n()
+        death = sum(DEATH == "Death")
       )
   })
+  
+  DIG_sub_WHF_m <- reactive({
+    category_col2 <- switch(
+      input$category2_tab3_2,
+      "Worsening Heart Failure" = "WHF"
+    )
+    
+    DIG_df %>%
+      #save the categorical variable
+      mutate(
+        category_var2 = .data[[category_col2]]) %>%
+      group_by(category_var2) %>% 
+      summarise(
+        death = sum(DEATH == "Death")
+      )
+  })
+  
+  DIG_sub_WHF_m_2 <- reactive({
+    DIG_df %>%
+      group_by(WHF,TRTMT) %>% 
+      summarise(
+        death = sum(DEATH == "Death")
+      )
+  })
+  
+  DIG_sub_dia_m <- reactive({
+    category_col2 <- switch(
+      input$category2_tab3_3,
+      "Diabetes" = "DIABETES"
+    )
+    
+    DIG_df %>%
+      #save the categorical variable
+      mutate(
+        category_var2 = .data[[category_col2]]) %>%
+      group_by(category_var2) %>% 
+      summarise(
+        death = sum(DEATH == "Death")
+      )
+  })
+  
+  DIG_sub_dia_m_2 <- reactive({
+    DIG_df %>%
+      group_by(DIABETES,TRTMT) %>% 
+      summarise(
+        death = sum(DEATH == "Death")
+      )
+  })
+  
+  DIG_sub_hyp_m <- reactive({
+    category_col2 <- switch(
+      input$category2_tab3_4,
+      "Hypertension" = "HYPERTEN"
+    )
+    
+    DIG_df %>%
+      #save the categorical variable
+      mutate(
+        category_var2 = .data[[category_col2]]) %>%
+      group_by(category_var2) %>% 
+      summarise(
+        death = sum(DEATH == "Death")
+      )
+  })
+  
+  DIG_sub_hyp_m_2 <- reactive({
+    DIG_df %>%
+      group_by(HYPERTEN,TRTMT) %>% 
+      summarise(
+        death = sum(DEATH == "Death")
+      )
+  })
+  
   
   
   #valuebox output
@@ -487,6 +857,84 @@ server <- function(input, output) {
     reactable(DIG_sub3())
   })
   
+  
+  
+  output$tab2_distPlot3 <- renderPlotly({
+    category1 <- req(input$category_tab2_2)
+    plot<-ggplot(DIG_sub2_pulcong(),
+                 aes(x = factor(category_var), y = hospitalization, fill = factor(category_var))) +
+      geom_col()+labs(x = paste(category1),y="Hospitalization",fill=paste(category1),title = paste("Plot between ",category1," and hospitalization"))
+    ggplotly(plot)
+  })
+  output$tab2_table3 <- renderReactable({
+    reactable(DIG_sub2_pulcong())
+  })
+  
+  
+  output$tab2_distPlot4 <- renderPlotly({
+    #req value from input
+    req(input$multicategory_tab2_2!="Disable")
+    plot <- ggplot(DIG_sub2_pulcong_2(), aes(x=factor(PULCONG), y = hospitalization,fill=factor(TRTMT))) +
+      geom_col(position = "dodge") +
+      labs(x="PULCONG",y="Hospitalization",fill="Treatment",title = "Plot between PULCONG, HOSP and Treatment")
+    ggplotly(plot)
+  })
+  output$tab2_table4 <- renderReactable({
+    req(input$multicategory_tab2_2!="Disable")
+    reactable(DIG_sub2_pulcong_2())
+  })
+  
+  
+  output$tab2_distPlot5 <- renderPlotly({
+    category1 <- req(input$category_tab2_3)
+    plot<-ggplot(DIG_sub2_dia(),
+                 aes(x = factor(category_var), y = hospitalization, fill = factor(category_var))) +
+      geom_col()+labs(x = paste(category1),y="Hospitalization",fill=paste(category1),title = paste("Plot between ",category1," and hospitalization"))
+    ggplotly(plot)
+  })
+  output$tab2_table5 <- renderReactable({
+    reactable(DIG_sub2_dia())
+  })
+  
+  
+  output$tab2_distPlot6 <- renderPlotly({
+    #req value from input
+    req(input$multicategory_tab2_3!="Disable")
+    plot <- ggplot(DIG_sub2_dia_2(), aes(x=factor(DIABETES), y = hospitalization,fill=factor(TRTMT))) +
+      geom_col(position = "dodge") +
+      labs(x="Diabetes",y="Hospitalization",fill="Treatment",title = "Plot between Diabetes, HOSP and Treatment")
+    ggplotly(plot)
+  })
+  output$tab2_table6 <- renderReactable({
+    req(input$multicategory_tab2_3!="Disable")
+    reactable(DIG_sub2_dia_2())
+  })
+  
+  output$tab2_distPlot7 <- renderPlotly({
+    category1 <- req(input$category_tab2_4)
+    plot<-ggplot(DIG_sub2_hyp(),
+                 aes(x = factor(category_var), y = hospitalization, fill = factor(category_var))) +
+      geom_col()+labs(x = paste(category1),y="Hospitalization",fill=paste(category1),title = paste("Plot between ",category1," and hospitalization"))
+    ggplotly(plot)
+  })
+  output$tab2_table7 <- renderReactable({
+    reactable(DIG_sub2_hyp())
+  })
+  
+  
+  output$tab2_distPlot8 <- renderPlotly({
+    #req value from input
+    req(input$multicategory_tab2_4!="Disable")
+    plot <- ggplot(DIG_sub2_hyp_2(), aes(x=factor(HYPERTEN), y = hospitalization,fill=factor(TRTMT))) +
+      geom_col(position = "dodge") +
+      labs(x="Hypertension",y="Hospitalization",fill="Treatment",title = "Plot between Hypertension, HOSP and Treatment")
+    ggplotly(plot)
+  })
+  output$tab2_table8 <- renderReactable({
+    req(input$multicategory_tab2_4!="Disable")
+    reactable(DIG_sub2_hyp_2())
+  })
+  
   #Mortality output
   
   output$tab3_distPlot <- renderPlotly({
@@ -514,6 +962,82 @@ server <- function(input, output) {
     reactable(DIG_sub5())
   })
   
+  output$tab3_distPlot3 <- renderPlotly({
+    category2 <- req(input$category2_tab3_2)
+    plot <- ggplot(DIG_sub_WHF_m(),
+                   aes(x = factor(category_var2), y = death, fill = factor(category_var2))) +
+      geom_col()+labs(x = paste(category2),y="Death",fill=paste(category2),title = paste("Plot between ",category2," and death"))
+    ggplotly(plot)
+  })
+  output$tab3_table3 <- renderReactable({
+    reactable(DIG_sub_WHF_m())
+  })
+  
+  
+  output$tab3_distPlot4 <- renderPlotly({
+    #req value from input
+    req(input$multicategory2_tab3_2!="Disable")
+    plot <- ggplot(DIG_sub_WHF_m_2(), aes(x=factor(WHF), y = death,fill=factor(TRTMT))) +
+      geom_col(position = "dodge") +
+      labs(x="WHF",y="Death",fill="Treatment",title = "Plot between WHF, Death and Treatment")
+    ggplotly(plot)
+  })
+  output$tab3_table4 <- renderReactable({
+    req(input$multicategory2_tab3_2!="Disable")
+    reactable(DIG_sub_WHF_m_2())
+  })
+  
+  
+  output$tab3_distPlot5 <- renderPlotly({
+    category2 <- req(input$category2_tab3_3)
+    plot <- ggplot(DIG_sub_dia_m(),
+                   aes(x = factor(category_var2), y = death, fill = factor(category_var2))) +
+      geom_col()+labs(x = paste(category2),y="Death",fill=paste(category2),title = paste("Plot between ",category2," and death"))
+    ggplotly(plot)
+  })
+  output$tab3_table5 <- renderReactable({
+    reactable(DIG_sub_dia_m())
+  })
+  
+  
+  output$tab3_distPlot6 <- renderPlotly({
+    #req value from input
+    req(input$multicategory2_tab3_3!="Disable")
+    plot <- ggplot(DIG_sub_dia_m_2(), aes(x=factor(DIABETES), y = death,fill=factor(TRTMT))) +
+      geom_col(position = "dodge") +
+      labs(x="Diabetes",y="Death",fill="Treatment",title = "Plot between Diabetes, Death and Treatment")
+    ggplotly(plot)
+  })
+  output$tab3_table6 <- renderReactable({
+    req(input$multicategory2_tab3_3!="Disable")
+    reactable(DIG_sub_dia_m_2())
+  })
+  
+  
+  output$tab3_distPlot7 <- renderPlotly({
+    category2 <- req(input$category2_tab3_4)
+    plot <- ggplot(DIG_sub_dia_m(),
+                   aes(x = factor(category_var2), y = death, fill = factor(category_var2))) +
+      geom_col()+labs(x = paste(category2),y="Death",fill=paste(category2),title = paste("Plot between ",category2," and death"))
+    ggplotly(plot)
+  })
+  output$tab3_table7 <- renderReactable({
+    reactable(DIG_sub_hyp_m())
+  })
+  
+  
+  output$tab3_distPlot8 <- renderPlotly({
+    #req value from input
+    req(input$multicategory2_tab3_4!="Disable")
+    plot <- ggplot(DIG_sub_hyp_m_2(), aes(x=factor(HYPERTEN), y = death,fill=factor(TRTMT))) +
+      geom_col(position = "dodge") +
+      labs(x="Hypertension",y="Death",fill="Treatment",title = "Plot between Hypertension, Death and Treatment")
+    ggplotly(plot)
+  })
+  output$tab3_table8 <- renderReactable({
+    req(input$multicategory2_tab3_4!="Disable")
+    reactable(DIG_sub_hyp_m_2())
+  })
   
   #SARA
   
