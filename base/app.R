@@ -6,12 +6,15 @@
 #
 #    https://shiny.posit.co/
 #
+
+library(shinyWidgets)
 library(shinydashboard)
 library(tidyverse)
 library(plotly)
 library(survival)
 library(reactable)
 
+shinyWidgets::shinyWidgetsGallery()
 
 dig_raw <- read.csv("DIG-1.csv")
 
@@ -154,9 +157,9 @@ ui <- dashboardPage(
                   title = "Select Main Focus",
                   status = "primary",
                   solidHeader = TRUE, 
-                  column(4,checkboxGroupInput(inputId = "category_main", label=NULL,choices=c("Worsening heart failure","Pulmonary congestion","Diabetes","Hypertension")),
-                  inlube=FALSE)
-                )
+                  column(4,prettyCheckboxGroup(inputId = "category_main", label=NULL,choices=c("Worsening heart failure","Pulmonary congestion","Diabetes","Hypertension")
+                         ,outline = TRUE,animation = "tada",status="success"))
+              )
               ),
               #Only show when checkbox is selected
               conditionalPanel(
@@ -165,7 +168,8 @@ ui <- dashboardPage(
               fluidRow(
                 box(
                   column(4,selectInput(inputId = "category",label="Select category",choice=c("WHF"),multiple = FALSE) ),
-                  column(4,radioButtons(inputId = "multicategory",label="Show multiple category",choices=c("Disable","Enable")))
+                  column(4,switchInput(inputId = "multicategory",label="Show multiple category",onLabel = "Enable",
+                                       offLabel = "Disable",value=FALSE))
                 )
               ),
               fluidRow(
@@ -198,7 +202,8 @@ ui <- dashboardPage(
               fluidRow(
                 box(
                   column(4,selectInput(inputId = "category_tab2_2",label="Select category",choice=c("Pulmonary congestion"),multiple = FALSE) ),
-                  column(4,radioButtons(inputId = "multicategory_tab2_2",label="Show multiple category",choices=c("Disable","Enable")))
+                  column(4,switchInput(inputId = "multicategory_tab2_2",label="Show multiple category",onLabel = "Enable",
+                                       offLabel = "Disable",value=FALSE))
                 )
               ),
               fluidRow(
@@ -231,7 +236,8 @@ ui <- dashboardPage(
               fluidRow(
                 box(
                   column(4,selectInput(inputId = "category_tab2_3",label="Select category",choice=c("Diabetes"),multiple = FALSE) ),
-                  column(4,radioButtons(inputId = "multicategory_tab2_3",label="Show multiple category",choices=c("Disable","Enable")))
+                  column(4,switchInput(inputId = "multicategory_tab2_3",label="Show multiple category",onLabel = "Enable",
+                                       offLabel = "Disable",value=FALSE))
                 )
               ),
               fluidRow(
@@ -264,7 +270,8 @@ ui <- dashboardPage(
               fluidRow(
                 box(
                   column(4,selectInput(inputId = "category_tab2_4",label="Select category",choice=c("Hypertension"),multiple = FALSE) ),
-                  column(4,radioButtons(inputId = "multicategory_tab2_4",label="Show multiple category",choices=c("Disable","Enable")))
+                  column(4,switchInput(inputId = "multicategory_tab2_4",label="Show multiple category",onLabel = "Enable",
+                                       offLabel = "Disable",value=FALSE))
                 )
               ),
               fluidRow(
@@ -299,8 +306,8 @@ ui <- dashboardPage(
                   title = "Select Main Focus",
                   status = "primary",
                   solidHeader = TRUE, 
-                  column(4,checkboxGroupInput(inputId = "category_main_m", label=NULL,choices=c("Worsening heart failure","CVD","Diabetes","Hypertension")),
-                         inlube=FALSE)
+                  column(4,prettyCheckboxGroup(inputId = "category_main_m",label=NULL,choices=c("Worsening heart failure","CVD","Diabetes","Hypertension"),outline = TRUE,
+                         animation = "tada",status="success"))
                 )
               ),
               conditionalPanel(
@@ -308,7 +315,8 @@ ui <- dashboardPage(
               fluidRow(
                 box(
                   column(4,selectInput(inputId = "category2",label="Select category",choice=c("CVD"),multiple = FALSE)),
-                  column(4,radioButtons(inputId = "multicategory2",label="Show multiple category",choices=c("Disable","Enable"))),
+                  column(4,switchInput(inputId = "multicategory2",label="Show multiple category",onLabel = "Enable",
+                                       offLabel = "Disable",value=FALSE))
                 )
               ),
               fluidRow(
@@ -341,7 +349,8 @@ ui <- dashboardPage(
           fluidRow(
             box(
               column(4,selectInput(inputId = "category2_tab3_2",label="Select category",choice=c("Worsening Heart Failure"),multiple = FALSE) ),
-              column(4,radioButtons(inputId = "multicategory2_tab3_2",label="Show multiple category",choices=c("Disable","Enable")))
+              column(4,switchInput(inputId = "multicategory2_tab3_2",label="Show multiple category",onLabel = "Enable",
+                                   offLabel = "Disable",value=FALSE))
             )
           ),
           fluidRow(
@@ -374,7 +383,8 @@ ui <- dashboardPage(
           fluidRow(
             box(
               column(4,selectInput(inputId = "category2_tab3_3",label="Select category",choice=c("Diabetes"),multiple = FALSE) ),
-              column(4,radioButtons(inputId = "multicategory2_tab3_3",label="Show multiple category",choices=c("Disable","Enable")))
+              column(4,switchInput(inputId = "multicategory2_tab3_3",label="Show multiple category",onLabel = "Enable",
+                                    offLabel = "Disable",value=FALSE))
             )
           ),
           fluidRow(
@@ -407,7 +417,8 @@ ui <- dashboardPage(
           fluidRow(
             box(
               column(4,selectInput(inputId = "category2_tab3_4",label="Select category",choice=c("Hypertension"),multiple = FALSE) ),
-              column(4,radioButtons(inputId = "multicategory2_tab3_4",label="Show multiple category",choices=c("Disable","Enable")))
+              column(4,switchInput(inputId = "multicategory2_tab3_4",label="Show multiple category",onLabel = "Enable",
+                                   offLabel = "Disable",value=FALSE))
             )
           ),
           fluidRow(
@@ -845,15 +856,15 @@ server <- function(input, output) {
   
   
   output$tab2_distPlot2 <- renderPlotly({
-    #req value from input
-    req(input$multicategory!="Disable")
+    #req value from input-> only display when switch is on
+    req(input$multicategory)
     plot <- ggplot(DIG_sub3(), aes(x=factor(WHF), y = hospitalization,fill=factor(TRTMT))) +
       geom_col(position = "dodge") +
       labs(x="WHF",y="Hospitalization",fill="Treatment",title = "Plot between WHF, HOSP and Treatment")
     ggplotly(plot)
     })
   output$tab2_table2 <- renderReactable({
-    req(input$multicategory!="Disable")
+    req(input$multicategory)
     reactable(DIG_sub3())
   })
   
@@ -873,14 +884,14 @@ server <- function(input, output) {
   
   output$tab2_distPlot4 <- renderPlotly({
     #req value from input
-    req(input$multicategory_tab2_2!="Disable")
+    req(input$multicategory_tab2_2)
     plot <- ggplot(DIG_sub2_pulcong_2(), aes(x=factor(PULCONG), y = hospitalization,fill=factor(TRTMT))) +
       geom_col(position = "dodge") +
       labs(x="PULCONG",y="Hospitalization",fill="Treatment",title = "Plot between PULCONG, HOSP and Treatment")
     ggplotly(plot)
   })
   output$tab2_table4 <- renderReactable({
-    req(input$multicategory_tab2_2!="Disable")
+    req(input$multicategory_tab2_2)
     reactable(DIG_sub2_pulcong_2())
   })
   
@@ -899,14 +910,14 @@ server <- function(input, output) {
   
   output$tab2_distPlot6 <- renderPlotly({
     #req value from input
-    req(input$multicategory_tab2_3!="Disable")
+    req(input$multicategory_tab2_3)
     plot <- ggplot(DIG_sub2_dia_2(), aes(x=factor(DIABETES), y = hospitalization,fill=factor(TRTMT))) +
       geom_col(position = "dodge") +
       labs(x="Diabetes",y="Hospitalization",fill="Treatment",title = "Plot between Diabetes, HOSP and Treatment")
     ggplotly(plot)
   })
   output$tab2_table6 <- renderReactable({
-    req(input$multicategory_tab2_3!="Disable")
+    req(input$multicategory_tab2_3)
     reactable(DIG_sub2_dia_2())
   })
   
@@ -924,14 +935,14 @@ server <- function(input, output) {
   
   output$tab2_distPlot8 <- renderPlotly({
     #req value from input
-    req(input$multicategory_tab2_4!="Disable")
+    req(input$multicategory_tab2_4)
     plot <- ggplot(DIG_sub2_hyp_2(), aes(x=factor(HYPERTEN), y = hospitalization,fill=factor(TRTMT))) +
       geom_col(position = "dodge") +
       labs(x="Hypertension",y="Hospitalization",fill="Treatment",title = "Plot between Hypertension, HOSP and Treatment")
     ggplotly(plot)
   })
   output$tab2_table8 <- renderReactable({
-    req(input$multicategory_tab2_4!="Disable")
+    req(input$multicategory_tab2_4)
     reactable(DIG_sub2_hyp_2())
   })
   
@@ -951,14 +962,14 @@ server <- function(input, output) {
   
   output$tab3_distPlot2 <- renderPlotly({
     #req value from input
-    req(input$multicategory2!="Disable")
+    req(input$multicategory2)
     plot <- ggplot(DIG_sub5(), aes(x=factor(CVD), y = death,fill=factor(TRTMT))) +
       geom_col(position = "dodge") +
       labs(x="CVD",y="Death",fill="Treatment",title = "Plot between CVD, Death and Treatment")
     ggplotly(plot)
     })
   output$tab3_table2 <- renderReactable({
-    req(input$multicategory2!="Disable")
+    req(input$multicategory2)
     reactable(DIG_sub5())
   })
   
@@ -976,14 +987,14 @@ server <- function(input, output) {
   
   output$tab3_distPlot4 <- renderPlotly({
     #req value from input
-    req(input$multicategory2_tab3_2!="Disable")
+    req(input$multicategory2_tab3_2)
     plot <- ggplot(DIG_sub_WHF_m_2(), aes(x=factor(WHF), y = death,fill=factor(TRTMT))) +
       geom_col(position = "dodge") +
       labs(x="WHF",y="Death",fill="Treatment",title = "Plot between WHF, Death and Treatment")
     ggplotly(plot)
   })
   output$tab3_table4 <- renderReactable({
-    req(input$multicategory2_tab3_2!="Disable")
+    req(input$multicategory2_tab3_2)
     reactable(DIG_sub_WHF_m_2())
   })
   
@@ -1002,14 +1013,14 @@ server <- function(input, output) {
   
   output$tab3_distPlot6 <- renderPlotly({
     #req value from input
-    req(input$multicategory2_tab3_3!="Disable")
+    req(input$multicategory2_tab3_3)
     plot <- ggplot(DIG_sub_dia_m_2(), aes(x=factor(DIABETES), y = death,fill=factor(TRTMT))) +
       geom_col(position = "dodge") +
       labs(x="Diabetes",y="Death",fill="Treatment",title = "Plot between Diabetes, Death and Treatment")
     ggplotly(plot)
   })
   output$tab3_table6 <- renderReactable({
-    req(input$multicategory2_tab3_3!="Disable")
+    req(input$multicategory2_tab3_3)
     reactable(DIG_sub_dia_m_2())
   })
   
@@ -1028,14 +1039,14 @@ server <- function(input, output) {
   
   output$tab3_distPlot8 <- renderPlotly({
     #req value from input
-    req(input$multicategory2_tab3_4!="Disable")
+    req(input$multicategory2_tab3_4)
     plot <- ggplot(DIG_sub_hyp_m_2(), aes(x=factor(HYPERTEN), y = death,fill=factor(TRTMT))) +
       geom_col(position = "dodge") +
       labs(x="Hypertension",y="Death",fill="Treatment",title = "Plot between Hypertension, Death and Treatment")
     ggplotly(plot)
   })
   output$tab3_table8 <- renderReactable({
-    req(input$multicategory2_tab3_4!="Disable")
+    req(input$multicategory2_tab3_4)
     reactable(DIG_sub_hyp_m_2())
   })
   
