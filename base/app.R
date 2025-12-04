@@ -6,24 +6,38 @@
 #
 #    https://shiny.posit.co/
 #
+library(shinydashboard)
+library(tidyverse)
+library(plotly)
+library(survival)
+library(reactable)
 
-library(shiny)
+
+dig_raw <- read.csv("DIG-1.csv")
+
+DIG_df <- dig_raw %>%
+  drop_na() %>%
+  mutate(
+    TRTMT = factor(TRTMT, levels = c(0, 1),
+                   labels = c("Placebo", "Digoxin")),
+    SEX   = factor(SEX,   levels = c(1, 2),
+                   labels = c("Male", "Female")),
+    RACE  = factor(RACE,  levels = c(1, 2),
+                   labels = c("White", "Nonwhite")),
+    DEATH = factor(DEATH, levels = c(0, 1),
+                   labels = c("Alive", "Death")),
+    CVD   = factor(CVD,   levels = c(0, 1),
+                   labels = c("No", "Yes")),
+    WHF   = factor(WHF,   levels = c(0, 1),
+                   labels = c("No", "Yes")),
+    Month = round(DEATHDAY / 30)
+  )
+
+age_min <- floor(min(DIG_df$AGE, na.rm = TRUE))
+age_max <- ceiling(max(DIG_df$AGE, na.rm = TRUE))
 
 # Define UI for application that draws a histogram
 ui <- dashboardPage(
-<<<<<<< Updated upstream
-
-    # Application title
-    dashboardHeader(title="DIG"),
-    dashboardSidebar(
-      sidebarMenu(
-        menuItem("Baseline", tabName = "Baseline", icon = icon("Dashboard")),
-        menuItem("Survival", tabName = "Survival", icon = icon("th"))
-      )
-    ),
-    dashboardBody(
-      tabItems(
-=======
   
   
   # Application title
@@ -33,8 +47,9 @@ ui <- dashboardPage(
       menuItem("Baseline", tabName = "Baseline", icon = icon("home")),
       menuItem("Hospitalization", tabName = "Hospitalization", icon = icon("table")),
       menuItem("Mortality", tabName = "Mortality", icon = icon("skull")),
-      menuItem("Outcomes summary", tabName = "outcomes", icon = icon("chart-column")),
-      menuItem("Survival (Months)", tabName = "survival", icon = icon("heartbeat")),
+      menuItem("Risk factor explorer", tabName = "risk",    icon = icon("chart-line")),
+      menuItem("Outcomes summary",   tabName = "outcomes",  icon = icon("chart-column")),
+      menuItem("Survival (Months)",  tabName = "survival",  icon = icon("heartbeat")),
       
       #Filter for survival
       menuItem(
@@ -105,34 +120,34 @@ ui <- dashboardPage(
           )
         ),
         fluidRow(
-        box(
-          title = "Filter Continuous Variable",
-          status="primary",
-          solidHeader = TRUE,
-          collapsible = TRUE,
-          selectInput(
-            inputId = "filter",
-            label   = "Select filter(continuous variable)",
-            choices = c("Age","DiaBP","SysBP","KLevel","Creat"),
-            multiple = FALSE
+          box(
+            title = "Filter Continuous Variable",
+            status="primary",
+            solidHeader = TRUE,
+            collapsible = TRUE,
+            selectInput(
+              inputId = "filter",
+              label   = "Select filter(continuous variable)",
+              choices = c("Age","DiaBP","SysBP","KLevel","Creat"),
+              multiple = FALSE
             ),
-          selectInput(
-            inputId = "type",
-            label   = "Select graph type",
-            choices = c("BarPlot","LinePlot"),
-            multiple = FALSE
-          )
+            selectInput(
+              inputId = "type",
+              label   = "Select graph type",
+              choices = c("BarPlot","LinePlot"),
+              multiple = FALSE
+            )
           ),
-        box(
-          title="Analysis",
-          status="primary",
-          solidHeader = TRUE,
-          collapsible = TRUE,
-          plotlyOutput("distPlot")
+          box(
+            title="Analysis",
+            status="primary",
+            solidHeader = TRUE,
+            collapsible = TRUE,
+            plotlyOutput("distPlot")
+          )
         )
-      )
-
-        ),
+        
+      ),
       #2nd tab
       tabItem(tabName = "Hospitalization",
               h2("Hospitalization among different categories"),
@@ -198,23 +213,110 @@ ui <- dashboardPage(
               )
       ),
       
-      # NEW TAB: Outcomes summary (SARA)
+      # 4) Risk factor explorer (SARA)
+      tabItem(
+        tabName = "risk",
+        h2("Risk factor explorer"),
+        
+        fluidRow(
+          box(
+            width       = 4,
+            title       = "Risk factor controls",
+            status      = "primary",
+            solidHeader = TRUE,
+            collapsible = TRUE,
+            helpText("Analyses here respect the global filters (treatment, sex, age) in the sidebar."),
+            
+            selectInput(
+              "risk_outcome", "Outcome",
+              choices = c(
+                "Hospitalization"                      = "hosp",
+                "Death"                                = "death",
+                "Hospitalization or death (composite)" = "composite"
+              ),
+              selected = "death"
+            ),
+            
+            selectInput(
+              "risk_var", "Clinical predictor",
+              choices = c(
+                "Age (years)"               = "AGE",
+                "Systolic BP"               = "SYSBP",
+                "Diastolic BP"              = "DIABP",
+                "Serum potassium (KLEVEL)"  = "KLEVEL",
+                "Creatinine (CREAT)"        = "CREAT"
+              ),
+              selected = "AGE"
+            ),
+            
+            checkboxInput(
+              "risk_adjust_trt",
+              "Adjust for treatment in model",
+              value = TRUE
+            )
+          ),
+          
+          box(
+            width       = 8,
+            title       = "Distribution of predictor by outcome",
+            status      = "info",
+            solidHeader = TRUE,
+            collapsible = TRUE,
+            plotlyOutput("risk_boxplot", height = 320)
+          )
+        ),
+        
+        fluidRow(
+          box(
+            width       = 6,
+            title       = "Density plot of predictor by outcome",
+            status      = "info",
+            solidHeader = TRUE,
+            collapsible = TRUE,
+            plotlyOutput("risk_density", height = 320)
+          ),
+          box(
+            width       = 6,
+            title       = "Logistic regression (SARA)",
+            status      = "info",
+            solidHeader = TRUE,
+            collapsible = TRUE,
+            helpText("Odds ratios for the selected predictor (and treatment, if selected) with respect to the chosen outcome."),
+            reactableOutput("risk_model_table")
+          )
+        ),
+        
+        fluidRow(
+          box(
+            width       = 12,
+            title       = "Correlation between key clinical variables (filtered data)",
+            status      = "info",
+            solidHeader = TRUE,
+            collapsible = TRUE,
+            reactableOutput("risk_corr_table")
+          )
+        )
+      ),
+      
+      # 5) Outcomes summary (SARA) 
       tabItem(
         tabName = "outcomes",
         h2("Outcomes summary"),
+        
         fluidRow(
           box(
             width       = 4,
             title       = "Outcomes controls",
             status      = "primary",
             solidHeader = TRUE,
+            collapsible = TRUE,
             helpText("All analyses here respect the global filters (treatment, sex, age) in the sidebar."),
             
             selectInput(
               "outcome_type", "Outcome",
               choices = c(
-                "Hospitalization"        = "hosp",
-                "Death"                  = "death",
+                "Hospitalization"                      = "hosp",
+                "Death"                                = "death",
                 "Hospitalization or death (composite)" = "composite"
               ),
               selected = "composite"
@@ -234,7 +336,7 @@ ui <- dashboardPage(
             
             radioButtons(
               "outcome_y", "Show on y-axis",
-              choices = c("Event count" = "count", "Event rate (%)" = "rate"),
+              choices  = c("Event count" = "count", "Event rate (%)" = "rate"),
               selected = "rate"
             )
           ),
@@ -244,6 +346,7 @@ ui <- dashboardPage(
             title       = "Event rates by group",
             status      = "primary",
             solidHeader = TRUE,
+            collapsible = TRUE,
             plotlyOutput("outcome_plot", height = 350)
           )
         ),
@@ -254,32 +357,34 @@ ui <- dashboardPage(
             title       = "Table of outcomes by group",
             status      = "info",
             solidHeader = TRUE,
+            collapsible = TRUE,
             reactableOutput("outcome_table")
           )
         )
       ),
       
-      
-      #4th tab
+      # 6) Survival (SARA) 
       tabItem(
         tabName = "survival",
         h2("Survival analysis (all-cause mortality)"),
+        
         fluidRow(
           box(
             width       = 4,
             title       = "Survival controls (only affect this tab)",
             status      = "primary",
             solidHeader = TRUE,
+            collapsible = TRUE,
             helpText("Data are already filtered by the global sidebar filters (treatment, sex, age)."),
             
             selectInput(
               "surv_group", "Group curves by",
               choices = c(
-                "Overall only"         = "none",
-                "Treatment"            = "TRTMT",
-                "CVD"                  = "CVD",
-                "Treatment + CVD"      = "TRTMT_CVD",
-                "Sex"                  = "SEX"
+                "Overall only"    = "none",
+                "Treatment"       = "TRTMT",
+                "CVD"             = "CVD",
+                "Treatment + CVD" = "TRTMT_CVD",
+                "Sex"             = "SEX"
               ),
               selected = "TRTMT"
             ),
@@ -313,6 +418,7 @@ ui <- dashboardPage(
             title       = "Kaplan–Meier survival curves",
             status      = "primary",
             solidHeader = TRUE,
+            collapsible = TRUE,
             plotOutput("km_main", height = 350),
             br(),
             verbatimTextOutput("surv_landmark_text")
@@ -325,6 +431,7 @@ ui <- dashboardPage(
             title       = "Number at risk / events at chosen month",
             status      = "info",
             solidHeader = TRUE,
+            collapsible = TRUE,
             tableOutput("tbl_surv_summary")
           ),
           box(
@@ -332,6 +439,7 @@ ui <- dashboardPage(
             title       = "Median survival time by group",
             status      = "info",
             solidHeader = TRUE,
+            collapsible = TRUE,
             tableOutput("tbl_surv_median")
           )
         ),
@@ -342,22 +450,18 @@ ui <- dashboardPage(
             title       = "Row-level data used in survival analysis (after all filters)",
             status      = "info",
             solidHeader = TRUE,
+            collapsible = TRUE,
             reactableOutput("tbl_surv_indiv")
           )
         )
->>>>>>> Stashed changes
       )
+      
     )
-
+  )
 )
 
-# Define server logic required to draw a histogram
-server <- function(input, output) {
-<<<<<<< Updated upstream
 
-  DIG_df <- read.csv("DIG-1.csv")
-  DIG_df <- DIG_df %>% drop_na()
-=======
+server <- function(input, output) {
   
   #Phoebe
   
@@ -542,9 +646,9 @@ server <- function(input, output) {
   output$distPlot <- renderPlotly({
     filter <- req(input$filter)
     if(input$type=="BarPlot"){
-    plot <- ggplot(DIG_sub(), aes(x = category_var, y=total,fill = TRTMT)) +
-      geom_col(position = "dodge")+labs(x=paste(filter),title = paste("Plot between ",filter," and treatment"))+theme_minimal()
-    ggplotly(plot)
+      plot <- ggplot(DIG_sub(), aes(x = category_var, y=total,fill = TRTMT)) +
+        geom_col(position = "dodge")+labs(x=paste(filter),title = paste("Plot between ",filter," and treatment"))+theme_minimal()
+      ggplotly(plot)
     }
     else if(input$type=="LinePlot"){
       plot <- ggplot(DIG_sub(), aes(x = category_var, y=total,color = TRTMT)) +
@@ -555,9 +659,9 @@ server <- function(input, output) {
   
   output$distPlot_cat <- renderPlotly({
     filter_cat <- req(input$filter_cat)
-      plot <- ggplot(DIG_sub_cat(), aes(x = factor(category_var), y=total,fill = TRTMT)) +
-        geom_col(position = "dodge")+labs(x=paste(filter_cat),title = paste("Plot between ",filter_cat," and treatment"))+theme_minimal()
-      ggplotly(plot)
+    plot <- ggplot(DIG_sub_cat(), aes(x = factor(category_var), y=total,fill = TRTMT)) +
+      geom_col(position = "dodge")+labs(x=paste(filter_cat),title = paste("Plot between ",filter_cat," and treatment"))+theme_minimal()
+    ggplotly(plot)
   })
   
   #Hospitalization output
@@ -565,10 +669,10 @@ server <- function(input, output) {
   output$tab2_distPlot <- renderPlotly({
     category1 <- req(input$category)
     plot<-ggplot(DIG_sub2(),
-           aes(x = factor(category_var), y = hospitalization, fill = factor(category_var))) +
+                 aes(x = factor(category_var), y = hospitalization, fill = factor(category_var))) +
       geom_col()+labs(x = paste(category1),y="Hospitalization",fill=paste(category1),title = paste("Plot between ",category1," and hospitalization"))
     ggplotly(plot)
-    })
+  })
   output$tab2_table1 <- renderReactable({
     reactable(DIG_sub2())
   })
@@ -581,7 +685,7 @@ server <- function(input, output) {
       geom_col(position = "dodge") +
       labs(x="WHF",y="Hospitalization",fill="Treatment",title = "Plot between WHF, HOSP and Treatment")
     ggplotly(plot)
-    })
+  })
   output$tab2_table2 <- renderReactable({
     req(input$multicategory!="Disable")
     reactable(DIG_sub3())
@@ -592,10 +696,10 @@ server <- function(input, output) {
   output$tab3_distPlot <- renderPlotly({
     category2 <- req(input$category2)
     plot <- ggplot(DIG_sub4(),
-           aes(x = factor(category_var2), y = death, fill = factor(category_var2))) +
+                   aes(x = factor(category_var2), y = death, fill = factor(category_var2))) +
       geom_col()+labs(x = paste(category2),y="Death",fill=paste(category2),title = paste("Plot between ",category2," and death"))
     ggplotly(plot)
-    })
+  })
   output$tab3_table1 <- renderReactable({
     reactable(DIG_sub4())
   })
@@ -608,7 +712,7 @@ server <- function(input, output) {
       geom_col(position = "dodge") +
       labs(x="CVD",y="Death",fill="Treatment",title = "Plot between CVD, Death and Treatment")
     ggplotly(plot)
-    })
+  })
   output$tab3_table2 <- renderReactable({
     req(input$multicategory2!="Disable")
     reactable(DIG_sub5())
@@ -622,46 +726,189 @@ server <- function(input, output) {
   filtered_data <- reactive({
     dat <- DIG_df
     
-    # sidebar filters
     if (input$filter_trt != "both") {
       dat <- dat %>% filter(TRTMT == input$filter_trt)
     }
     if (input$filter_sex != "both") {
       dat <- dat %>% filter(SEX == input$filter_sex)
     }
-    dat <- dat %>%
-      filter(AGE >= input$filter_age[1],
-             AGE <= input$filter_age[2])
     
+    dat %>%
+      filter(
+        AGE >= input$filter_age[1],
+        AGE <= input$filter_age[2]
+      )
+  })
+  
+  # SARA: Risk factor explorer
+  risk_data <- reactive({
+    dat <- filtered_data()
+    if (nrow(dat) == 0) return(NULL)
+    
+    dat <- dat %>%
+      mutate(
+        RISK_OUTCOME = dplyr::case_when(
+          input$risk_outcome == "hosp"      ~ as.numeric(HOSP == 1),
+          input$risk_outcome == "death"     ~ as.numeric(DEATH == "Death"),
+          input$risk_outcome == "composite" ~ as.numeric(HOSP == 1 | DEATH == "Death"),
+          TRUE                              ~ 0
+        ),
+        RISK_OUTCOME_F = factor(
+          RISK_OUTCOME,
+          levels = c(0, 1),
+          labels = c("No event", "Event")
+        )
+      )
+    
+    pred_col <- input$risk_var
+    
+    dat <- dat %>%
+      filter(!is.na(.data[[pred_col]]))
+    
+    if (nrow(dat) == 0) return(NULL)
     dat
   })
-
-  # ----- SARA: Outcomes summary tab -----
+  
+  output$risk_boxplot <- renderPlotly({
+    dat <- risk_data()
+    req(dat)
+    
+    pred_col <- input$risk_var
+    pred_lab <- names(which(c(
+      AGE    = "AGE",
+      SYSBP  = "SYSBP",
+      DIABP  = "DIABP",
+      KLEVEL = "KLEVEL",
+      CREAT  = "CREAT"
+    ) == pred_col))
+    
+    p <- ggplot(
+      dat,
+      aes(x = RISK_OUTCOME_F, y = .data[[pred_col]], fill = RISK_OUTCOME_F)
+    ) +
+      geom_boxplot() +
+      labs(
+        x = "Outcome",
+        y = pred_lab
+      ) +
+      theme_minimal(base_size = 13)
+    
+    ggplotly(p)
+  })
+  
+  output$risk_density <- renderPlotly({
+    dat <- risk_data()
+    req(dat)
+    
+    pred_col <- input$risk_var
+    pred_lab <- names(which(c(
+      AGE    = "AGE",
+      SYSBP  = "SYSBP",
+      DIABP  = "DIABP",
+      KLEVEL = "KLEVEL",
+      CREAT  = "CREAT"
+    ) == pred_col))
+    
+    p <- ggplot(
+      dat,
+      aes(x = .data[[pred_col]], fill = RISK_OUTCOME_F, colour = RISK_OUTCOME_F)
+    ) +
+      geom_density(alpha = 0.3) +
+      labs(
+        x      = pred_lab,
+        y      = "Density",
+        fill   = "Outcome",
+        colour = "Outcome"
+      ) +
+      theme_minimal(base_size = 13)
+    
+    ggplotly(p)
+  })
+  
+  output$risk_model_table <- renderReactable({
+    dat <- risk_data()
+    req(dat)
+    
+    pred_col <- input$risk_var
+    
+    if (input$risk_adjust_trt) {
+      fml <- as.formula(paste("RISK_OUTCOME ~", pred_col, "+ TRTMT"))
+    } else {
+      fml <- as.formula(paste("RISK_OUTCOME ~", pred_col))
+    }
+    
+    fit      <- glm(fml, data = dat, family = binomial)
+    coef_tab <- summary(fit)$coefficients
+    OR       <- exp(coef_tab[, "Estimate"])
+    CI       <- exp(confint(fit))
+    
+    res <- data.frame(
+      Term       = rownames(coef_tab),
+      OR         = round(OR, 2),
+      CI_lower   = round(CI[, 1], 2),
+      CI_upper   = round(CI[, 2], 2),
+      p_value    = round(coef_tab[, "Pr(>|z|)"], 3),
+      check.names = FALSE
+    )
+    
+    reactable(
+      res,
+      searchable      = FALSE,
+      sortable        = FALSE,
+      defaultPageSize = nrow(res),
+      striped         = TRUE,
+      highlight       = TRUE
+    )
+  })
+  
+  output$risk_corr_table <- renderReactable({
+    dat <- filtered_data()
+    req(dat)
+    
+    vars    <- c("AGE", "SYSBP", "DIABP", "KLEVEL", "CREAT")
+    dat_num <- dat[, vars]
+    
+    cmat    <- cor(dat_num, use = "pairwise.complete.obs")
+    corr_df <- as.data.frame(round(cmat, 2))
+    corr_df$Variable <- rownames(corr_df)
+    corr_df <- corr_df[, c("Variable", vars)]
+    
+    reactable(
+      corr_df,
+      searchable      = FALSE,
+      sortable        = TRUE,
+      defaultPageSize = nrow(corr_df),
+      striped         = TRUE,
+      highlight       = TRUE
+    )
+  })
+  
+  # SARA: Outcomes summary 
   outcome_data <- reactive({
     dat <- filtered_data()
     if (nrow(dat) == 0) return(NULL)
     
-    # Create age groups for option "AGE_GROUP"
     dat <- dat %>%
       mutate(
         AGE_GROUP = cut(
           AGE,
-          breaks = seq(floor(min(AGE, na.rm = TRUE)),
-                       ceiling(max(AGE, na.rm = TRUE)) + 1,
-                       by = 5),
-          right = FALSE,
+          breaks = seq(
+            floor(min(AGE, na.rm = TRUE)),
+            ceiling(max(AGE, na.rm = TRUE)) + 1,
+            by = 5
+          ),
+          right         = FALSE,
           include.lowest = TRUE
         )
       )
     
-    # Choose outcome flag
     dat <- dat %>%
       mutate(
         OUTCOME_FLAG = dplyr::case_when(
-          input$outcome_type == "hosp" ~ as.numeric(HOSP == 1),
-          input$outcome_type == "death" ~ as.numeric(DEATH == "Death"),
+          input$outcome_type == "hosp"      ~ as.numeric(HOSP == 1),
+          input$outcome_type == "death"     ~ as.numeric(DEATH == "Death"),
           input$outcome_type == "composite" ~ as.numeric(HOSP == 1 | DEATH == "Death"),
-          TRUE ~ 0
+          TRUE                              ~ 0
         )
       )
     
@@ -689,20 +936,7 @@ server <- function(input, output) {
       geom_col(fill = "#3182bd") +
       labs(
         x = "",
-        y = y_lab,
-        title = paste(
-          if (input$outcome_type == "hosp") "Hospitalization" else
-            if (input$outcome_type == "death") "Death" else
-              "Hospitalization or death",
-          "by", 
-          names(which(c(
-            TRTMT    = "TRTMT",
-            CVD      = "CVD",
-            WHF      = "WHF",
-            SEX      = "SEX",
-            AGE_GROUP = "AGE_GROUP"
-          ) == input$outcome_group))
-        )
+        y = y_lab
       ) +
       theme_minimal(base_size = 13)
     
@@ -716,26 +950,27 @@ server <- function(input, output) {
     reactable(
       dat %>%
         mutate(EventRate = round(EventRate, 1)),
-      searchable = TRUE,
-      sortable   = TRUE,
+      searchable      = TRUE,
+      sortable        = TRUE,
       defaultPageSize = 10,
-      striped = TRUE,
-      highlight = TRUE
+      striped         = TRUE,
+      highlight       = TRUE
     )
   })
   
-  # Data used for survival analysis (includes Month + DEATH + time range)
+  # ---------------- SARA: Survival analysis -----------------------------
   surv_data <- reactive({
     dat <- filtered_data() %>%
       filter(!is.na(Month), !is.na(DEATH)) %>%
-      filter(Month >= input$surv_time_range[1],
-             Month <= input$surv_time_range[2])
+      filter(
+        Month >= input$surv_time_range[1],
+        Month <= input$surv_time_range[2]
+      )
     
     if (nrow(dat) == 0) return(NULL)
     dat
   })
   
-  # Fit Kaplan–Meier model according to chosen grouping
   surv_fit <- reactive({
     dat <- surv_data()
     req(dat)
@@ -744,17 +979,16 @@ server <- function(input, output) {
     
     fit <- switch(
       input$surv_group,
-      "none" = survfit(surv_obj ~ 1, data = dat),
-      "TRTMT" = survfit(surv_obj ~ TRTMT, data = dat),
-      "CVD" = survfit(surv_obj ~ CVD, data = dat),
+      "none"      = survfit(surv_obj ~ 1,           data = dat),
+      "TRTMT"     = survfit(surv_obj ~ TRTMT,       data = dat),
+      "CVD"       = survfit(surv_obj ~ CVD,         data = dat),
       "TRTMT_CVD" = survfit(surv_obj ~ TRTMT + CVD, data = dat),
-      "SEX" = survfit(surv_obj ~ SEX, data = dat)
+      "SEX"       = survfit(surv_obj ~ SEX,         data = dat)
     )
     
     fit
   })
   
-  # Main survival plot
   output$km_main <- renderPlot({
     fit <- surv_fit()
     req(fit)
@@ -762,14 +996,16 @@ server <- function(input, output) {
     s <- summary(fit)
     
     df <- data.frame(
-      Month = s$time,
+      Month    = s$time,
       Survival = s$surv,
-      Lower = s$lower,
-      Upper = s$upper,
-      Group = if (is.null(s$strata)) "Overall" else s$strata
+      Lower    = s$lower,
+      Upper    = s$upper,
+      Group    = if (is.null(s$strata)) "Overall" else s$strata
     ) %>%
-      filter(Month >= input$surv_time_range[1],
-             Month <= input$surv_time_range[2])
+      filter(
+        Month >= input$surv_time_range[1],
+        Month <= input$surv_time_range[2]
+      )
     
     p <- ggplot(df, aes(x = Month, y = Survival, colour = Group)) +
       geom_step(size = 1) +
@@ -783,17 +1019,15 @@ server <- function(input, output) {
       p <- p +
         geom_ribbon(
           aes(ymin = Lower, ymax = Upper, fill = Group),
-          alpha = 0.15,
-          colour = NA,
+          alpha    = 0.15,
+          colour   = NA,
           linewidth = 0
         )
     }
     
     p
   })
->>>>>>> Stashed changes
   
-  # Text summary at chosen landmark month
   output$surv_landmark_text <- renderPrint({
     fit <- surv_fit()
     req(fit)
@@ -804,18 +1038,17 @@ server <- function(input, output) {
     grp <- if (is.null(s$strata)) "Overall" else s$strata
     
     res <- data.frame(
-      Group       = grp,
-      Month       = s$time,
-      Surv        = round(s$surv, 3),
+      Group        = grp,
+      Month        = s$time,
+      Surv         = round(s$surv, 3),
       `No. at risk` = s$n.risk,
-      Events      = s$n.event
+      Events       = s$n.event
     )
     
     cat("Survival at month", t0, "\n\n")
     print(res, row.names = FALSE)
   })
   
-  # Table: number at risk / events at landmark month
   output$tbl_surv_summary <- renderTable({
     fit <- surv_fit()
     req(fit)
@@ -826,26 +1059,27 @@ server <- function(input, output) {
     grp <- if (is.null(s$strata)) "Overall" else s$strata
     
     data.frame(
-      Group        = grp,
-      Month        = s$time,
+      Group                = grp,
+      Month                = s$time,
       `Survival probability` = round(s$surv, 3),
-      `No. at risk` = s$n.risk,
-      Events       = s$n.event,
-      check.names  = FALSE
+      `No. at risk`        = s$n.risk,
+      Events               = s$n.event,
+      check.names          = FALSE
     )
   })
   
-  # Table: median survival and 95% CI for each group
   output$tbl_surv_median <- renderTable({
     fit <- surv_fit()
     req(fit)
     
     tab <- summary(fit)$table
     
-    # When only one group, summary() returns a named vector
     if (is.null(dim(tab))) {
-      tab <- matrix(tab, nrow = 1,
-                    dimnames = list("Overall", names(tab)))
+      tab <- matrix(
+        tab,
+        nrow     = 1,
+        dimnames = list("Overall", names(tab))
+      )
     }
     
     data.frame(
@@ -857,7 +1091,6 @@ server <- function(input, output) {
     )
   })
   
-  # Table of individual rows used in the survival analysis
   output$tbl_surv_indiv <- renderReactable({
     dat <- surv_data()
     req(dat)
@@ -865,13 +1098,12 @@ server <- function(input, output) {
     reactable(
       dat %>%
         dplyr::select(TRTMT, SEX, AGE, CVD, WHF, Month, DEATH),
-      searchable = TRUE,
-      sortable   = TRUE,
-      pagination = TRUE,
+      searchable      = TRUE,
+      sortable        = TRUE,
+      pagination      = TRUE,
       defaultPageSize = 10
     )
   })
-  
   
 }
 
